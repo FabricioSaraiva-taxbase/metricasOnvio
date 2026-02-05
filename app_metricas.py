@@ -116,12 +116,28 @@ def listar_arquivos_por_ano():
     estrutura = {}
     for f in arquivos:
         nome_base = os.path.basename(f).replace(".csv", "")
-        partes = nome_base.split('_')
+        # Separa o Ano do resto (Ex: 2026_02 (PARCIAL))
+        partes = nome_base.split('_', 1)
         if len(partes) == 2:
-            ano, mes = partes[0], partes[1]
-            if ano not in estrutura: estrutura[ano] = []
-            display = f"{mes}/{ano[2:]}"
-            estrutura[ano].append({'caminho': f, 'display': display, 'mes_raw': mes})
+            ano = partes[0]
+            resto = partes[1]  # Ex: "02 (PARCIAL)" ou "02"
+
+            if ano.isdigit() and len(ano) == 4:
+                if ano not in estrutura: estrutura[ano] = []
+
+                # Tenta extrair o mês numérico para ordenação
+                mes_num_str = resto[:2]
+                try:
+                    mes_int = int(mes_num_str)
+                except:
+                    mes_int = 0
+
+                # --- NOVA LÓGICA DE VISUALIZAÇÃO ---
+                # Transforma "02 (PARCIAL)" em "02/26 (PARCIAL)"
+                sufixo = resto[2:]  # Pega tudo depois dos 2 primeiros dígitos
+                display = f"{mes_num_str}/{ano[2:]}{sufixo}"
+
+                estrutura[ano].append({'caminho': f, 'display': display, 'mes_raw': mes_int})
 
     for ano in estrutura:
         estrutura[ano] = sorted(estrutura[ano], key=lambda x: x['mes_raw'], reverse=True)
@@ -171,7 +187,7 @@ def cadastrar_novo_cliente(nome_contato, nome_cliente):
 
 # --- 2. FRONTEND PRINCIPAL ---
 
-def renderizar_metricas_limpas(df, titulo_contexto):
+def renderizar_metricas_limpas(df, titulo_contexto, caminho_arquivo_atual=None):
     """Componente reutilizável de dashboard com visual limpo e interativo."""
 
     # --- ÁREA DE CADASTRO RÁPIDO ---
@@ -200,7 +216,8 @@ def renderizar_metricas_limpas(df, titulo_contexto):
                     else:
                         st.warning("Digite o nome da empresa.")
 
-    st.markdown("---")
+    # Espaçamento mínimo
+    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
 
     # --- FILTROS ---
     c_f1, c_f2 = st.columns([2, 2])
@@ -223,15 +240,15 @@ def renderizar_metricas_limpas(df, titulo_contexto):
 
     df_ranking = df_view[~df_view['Cliente_Final'].isin(["TAXBASE INTERNO", "IGNORAR", "NÃO IDENTIFICADO"])]
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- KPIS ---
+    # --- KPIS (Margem Reduzida: Removido o <br>) ---
+    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
     k1, k2, k3 = st.columns(3)
     k1.metric("Total Geral (Bruto)", len(df_view), help="Total de chamados recebidos (inclui internos)")
     k2.metric("Atendimentos Válidos", len(df_ranking), help="Exclui Taxbase Interno e Ignorar")
     k3.metric("Clientes Únicos", df_ranking['Cliente_Final'].nunique())
 
-    st.markdown("---")
+    # Linha divisória mais próxima dos KPIs
+    st.markdown("<hr style='margin-top: 0px; margin-bottom: 15px;'>", unsafe_allow_html=True)
 
     # --- GRÁFICOS ---
     c_g1, c_g2 = st.columns([2, 1])
@@ -239,7 +256,7 @@ def renderizar_metricas_limpas(df, titulo_contexto):
         if filtro_cliente != "Todos (Visão Geral)":
             st.markdown(f"#### Volume: {filtro_cliente}")
         else:
-            st.markdown("#### Top 10 Demandantes")
+            st.markdown("#### Clientes com maior demanda")
 
         if not df_ranking.empty:
             ranking = df_ranking['Cliente_Final'].value_counts().head(10).reset_index()
@@ -260,41 +277,32 @@ def renderizar_metricas_limpas(df, titulo_contexto):
     with c_g2:
         st.markdown("#### Atendimentos por Dia")
 
-        # FEATURE 3: Checkbox de Calendário
         usar_mes_completo = st.checkbox("Exibir calendário completo (incluir dias zerados)", value=True,
                                         key=f"chk_{titulo_contexto}")
 
         if not df_ranking.empty:
-            # Lógica de Range
             min_date = df_ranking['Dia'].min()
             max_date = df_ranking['Dia'].max()
 
             if usar_mes_completo:
-                # Preenche zeros entre as datas (e expande para o mês todo se possível)
                 start_date = min_date.replace(day=1)
                 last_day_num = calendar.monthrange(max_date.year, max_date.month)[1]
                 end_date = max_date.replace(day=last_day_num)
                 full_range = pd.date_range(start=start_date, end=end_date)
 
-                # Reindexação (Preencher buracos com 0)
                 timeline = df_ranking.groupby('Dia').size()
                 timeline.index = pd.to_datetime(timeline.index)
                 timeline = timeline.reindex(full_range, fill_value=0).reset_index()
                 timeline.columns = ['Dia', 'Volume']
                 timeline['Dia'] = timeline['Dia'].dt.date
-
             else:
-                # MODO ESPARSO: Não preenche zeros.
                 timeline = df_ranking.groupby('Dia').size().reset_index(name='Volume')
 
-            # --- NOVO: Mapeamento de Dia da Semana ---
             dias_map = {0: 'Segunda-feira', 1: 'Terça-feira', 2: 'Quarta-feira', 3: 'Quinta-feira',
                         4: 'Sexta-feira', 5: 'Sábado', 6: 'Domingo'}
-            # Garante que a coluna Dia seja datetime para extrair o dia da semana
             timeline['Temp_Date'] = pd.to_datetime(timeline['Dia'])
             timeline['Dia da Semana'] = timeline['Temp_Date'].dt.dayofweek.map(dias_map)
 
-            # Criação do gráfico com Tooltip personalizado
             fig_line = px.line(timeline, x='Dia', y='Volume', markers=True,
                                hover_data={'Dia': '|%d/%m/%Y', 'Volume': True, 'Dia da Semana': True,
                                            'Temp_Date': False})
@@ -308,9 +316,67 @@ def renderizar_metricas_limpas(df, titulo_contexto):
     st.dataframe(df_ranking[['Data', 'Cliente_Final', 'Contato', 'Atendido por', 'Status']], use_container_width=True,
                  hide_index=True)
 
+    # --- OPÇÕES DE ADMINISTRADOR (LISTA ÚNICA) ---
+    if st.session_state.get('user_role') == 'admin' and caminho_arquivo_atual:
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        with st.expander("🛠️ Opções de Administrador"):  # Título ajustado
+
+            # 1. RENOMEAR
+            st.markdown("##### ✏️ 1. Renomear Mês")
+            col_ren1, col_ren2 = st.columns([3, 1])
+            with col_ren1:
+                nome_atual_arquivo = os.path.basename(caminho_arquivo_atual).replace(".csv", "")
+                novo_nome = st.text_input("Novo nome do arquivo:", value=nome_atual_arquivo,
+                                          key=f"rn_in_{titulo_contexto}", label_visibility="collapsed")
+            with col_ren2:
+                if st.button("Renomear", key=f"rn_bt_{titulo_contexto}"):
+                    if novo_nome and novo_nome != nome_atual_arquivo:
+                        novo_caminho = os.path.join("data", novo_nome + ".csv")
+                        try:
+                            os.rename(caminho_arquivo_atual, novo_caminho)
+                            st.success("Renomeado!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro: {e}")
+
+            st.markdown("---")
+
+            # 2. SUBSTITUIR
+            st.markdown("##### 📂 2. Substituir Arquivo (CSV)")
+            col_up1, col_up2 = st.columns([3, 1])
+            with col_up1:
+                up_sub = st.file_uploader("Upload do novo arquivo", type=['csv'], key=f"up_sub_{titulo_contexto}",
+                                          label_visibility="collapsed")
+            with col_up2:
+                if up_sub and st.button("Substituir", key=f"bt_sub_{titulo_contexto}"):
+                    with open(caminho_arquivo_atual, "wb") as f:
+                        f.write(up_sub.getbuffer())
+                    st.success("Atualizado!")
+                    st.rerun()
+
+            st.markdown("---")
+
+            # 3. EXCLUIR
+            st.markdown("##### 🗑️ 3. Zona de Perigo")
+            col_del1, col_del2 = st.columns([3, 1])
+            with col_del1:
+                check_del = st.checkbox("Confirmar exclusão definitiva deste mês", key=f"chk_del_{titulo_contexto}")
+            with col_del2:
+                if st.button("Excluir Mês", type="primary", key=f"bt_del_{titulo_contexto}"):
+                    if check_del:
+                        try:
+                            os.remove(caminho_arquivo_atual)
+                            st.success("Excluído!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro: {e}")
+                    else:
+                        st.warning("Marque a caixa ao lado.")
+
 
 def main_app():
-    # --- CSS BLINDADO V4 (LIMPEZA TOTAL DE BORDAS) ---
+    # --- CSS BLINDADO V5 (REVISADO) ---
     st.markdown(f"""
         <style>
         /* 1. LAYOUT GERAL */
@@ -321,63 +387,47 @@ def main_app():
         h1, h2, h3, h4 {{ color: {COR_PRIMARIA}; font-family: 'Segoe UI', sans-serif; }}
         div[data-testid="stMetricValue"] {{ color: {COR_PRIMARIA}; font-weight: bold; }}
 
-        /* 3. CORREÇÃO DAS ABAS (O FIM DA LINHA VERMELHA) */
-        /* Container das abas */
+        /* 3. CORREÇÃO DAS ABAS - REMOÇÃO DE BORDAS */
         .stTabs [data-baseweb="tab-list"] {{
-            border-bottom: none !important; /* Remove a linha cinza do trilho */
+            border-bottom: none !important;
             gap: 8px;
+            padding-bottom: 0px !important;
         }}
-
-        /* Estilo base de TODAS as abas (Ativas e Inativas) */
         .stTabs [data-baseweb="tab"] {{
-            border: none !important;         /* Mata bordas vermelhas/cinzas */
-            border-radius: 0px !important;   /* Remove arredondamento */
+            border: none !important;
             background-color: transparent !important;
-            box-shadow: none !important;     /* Mata sombras vermelhas */
-            outline: none !important;        /* Mata outline de foco */
-            color: {COR_SECUNDARIA};         /* Cor padrão cinza */
+            box-shadow: none !important;
+            outline: none !important;
+            color: {COR_SECUNDARIA};
         }}
-
-        /* Estilo ESPECÍFICO da aba ATIVA */
+        /* Elemento "fantasma" que causa a linha vermelha */
+        div[data-baseweb="tab-highlight"] {{
+            display: none !important;
+        }}
+        /* Aba Ativa */
         .stTabs [aria-selected="true"] {{
-            border-bottom: 3px solid {COR_PRIMARIA} !important; /* A única borda permitida */
+            border-bottom: 3px solid {COR_PRIMARIA} !important;
             color: {COR_PRIMARIA} !important;
             font-weight: bold !important;
         }}
-
-        /* Força a cor do texto (p) dentro da aba ativa */
-        .stTabs [aria-selected="true"] p {{
+        button[data-baseweb="tab"][aria-selected="true"] p {{
             color: {COR_PRIMARIA} !important;
         }}
 
-        /* Remove comportamento de hover que traz cor errada */
-        .stTabs [data-baseweb="tab"]:hover {{
-            color: {COR_PRIMARIA} !important;
-            background-color: transparent !important;
-            border: none !important;
-        }}
-
-        /* 4. CORREÇÃO DE INPUTS (MATA O VERMELHO NO FOCO) */
+        /* 4. INPUTS AZUIS */
         div[data-baseweb="select"]:focus-within > div, 
         div[data-baseweb="input"]:focus-within > div {{
             border-color: {COR_PRIMARIA} !important;
             box-shadow: 0 0 0 1px {COR_PRIMARIA} !important;
         }}
         input {{ caret-color: {COR_PRIMARIA} !important; }}
-
-        /* Checkbox */
         div[data-baseweb="checkbox"] span[aria-checked="true"] {{
             background-color: {COR_PRIMARIA} !important;
             border-color: {COR_PRIMARIA} !important;
         }}
 
-        /* 5. BOTÃO VOLTAR AO HUB */
-        .hub-btn {{
-            position: fixed;
-            top: 130px;
-            left: 10px;
-            z-index: 9999;
-        }}
+        /* 5. BOTÃO VOLTAR */
+        .hub-btn {{ position: fixed; top: 130px; left: 10px; z-index: 9999; }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -419,8 +469,6 @@ def main_app():
             st.session_state['logged_in'] = False
             st.rerun()
 
-    st.markdown("---")
-
     # --- LÓGICA DE EXIBIÇÃO ---
 
     if st.session_state.get('show_config', False) and st.session_state['user_role'] == 'admin':
@@ -430,8 +478,6 @@ def main_app():
             st.session_state['show_config'] = False
             st.rerun()
 
-        # --- FEEDBACK PERSISTENTE (CORREÇÃO DE UX) ---
-        # Exibe mensagem se houver e deleta do estado
         if 'feedback_sucesso' in st.session_state:
             st.success(st.session_state['feedback_sucesso'])
             del st.session_state['feedback_sucesso']
@@ -439,7 +485,6 @@ def main_app():
         c1, c2 = st.columns(2)
         with c1:
             st.info("**Iniciar um Novo Mês**")
-            # Adicionamos KEYs para poder limpar os campos
             nm = st.text_input("Nome (ex: 2026_03)", key="novo_mes_nome")
             up = st.file_uploader("CSV Inicial", key="novo_mes_arq")
 
@@ -449,13 +494,9 @@ def main_app():
                     with open(os.path.join("data", nm), "wb") as f:
                         f.write(up.getbuffer())
 
-                    # Salva mensagem e força limpeza via Session State
                     st.session_state['feedback_sucesso'] = f"Mês {nm} criado com sucesso!"
-
-                    # Truque do Streamlit: Deletar a key reseta o widget
                     if "novo_mes_nome" in st.session_state: del st.session_state["novo_mes_nome"]
                     if "novo_mes_arq" in st.session_state: del st.session_state["novo_mes_arq"]
-
                     st.rerun()
 
         with c2:
@@ -473,7 +514,6 @@ def main_app():
         abas_topo_nomes = lista_anos + ["📈 Análise Personalizada"]
         abas_topo = st.tabs(abas_topo_nomes)
 
-        # Loop pelos Anos
         for i, ano in enumerate(lista_anos):
             with abas_topo[i]:
                 meses_do_ano = dados_anos[ano]
@@ -489,16 +529,8 @@ def main_app():
                             df = carregar_dados_mes(caminho)
 
                             if df is not None:
-                                renderizar_metricas_limpas(df, f"{ano}_{j}")
-
-                                if st.session_state['user_role'] == 'admin':
-                                    st.markdown("<br>", unsafe_allow_html=True)
-                                    with st.expander("Atualizar dados deste mês"):
-                                        ups = st.file_uploader("Substituir CSV", key=f"up_{ano}_{j}")
-                                        if ups and st.button("Salvar", key=f"sv_{ano}_{j}"):
-                                            with open(caminho, "wb") as f: f.write(ups.getbuffer())
-                                            st.success("Salvo!");
-                                            st.rerun()
+                                # AQUI ESTÁ A MUDANÇA: Passamos o caminho do arquivo
+                                renderizar_metricas_limpas(df, f"{ano}_{j}", caminho_arquivo_atual=caminho)
 
         # Aba de Análise Personalizada
         with abas_topo[-1]:
@@ -539,7 +571,6 @@ def main_app():
                         min_d, max_d = df_full['Dia'].min(), df_full['Dia'].max()
                         dates = st.date_input("Início e Fim", [min_d, max_d])
                         if len(dates) == 2:
-                            # Ajuste para incluir o dia final inteiro
                             d_inicio = pd.to_datetime(dates[0])
                             d_fim = pd.to_datetime(dates[1]) + timedelta(days=1) - timedelta(seconds=1)
                             df_filtrado = df_full[(df_full['Data'] >= d_inicio) & (df_full['Data'] <= d_fim)]
