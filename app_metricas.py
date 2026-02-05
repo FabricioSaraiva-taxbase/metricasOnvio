@@ -141,7 +141,7 @@ def cadastrar_novo_cliente(nome_contato, nome_cliente):
     try:
         # Carrega o workbook existente (mantendo estilos)
         wb = load_workbook(map_path)
-        ws = wb.active
+        ws = wb.active  # Pega a aba ativa
 
         # Descobre qual coluna é qual
         headers = [cell.value for cell in ws[1]]
@@ -430,18 +430,34 @@ def main_app():
             st.session_state['show_config'] = False
             st.rerun()
 
+        # --- FEEDBACK PERSISTENTE (CORREÇÃO DE UX) ---
+        # Exibe mensagem se houver e deleta do estado
+        if 'feedback_sucesso' in st.session_state:
+            st.success(st.session_state['feedback_sucesso'])
+            del st.session_state['feedback_sucesso']
+
         c1, c2 = st.columns(2)
         with c1:
             st.info("**Iniciar um Novo Mês**")
-            nm = st.text_input("Nome (ex: 2026_03)")
-            up = st.file_uploader("CSV Inicial", key="new_month_up")
+            # Adicionamos KEYs para poder limpar os campos
+            nm = st.text_input("Nome (ex: 2026_03)", key="novo_mes_nome")
+            up = st.file_uploader("CSV Inicial", key="novo_mes_arq")
+
             if st.button("Criar Mês"):
                 if nm and up:
                     if not nm.endswith(".csv"): nm += ".csv"
                     with open(os.path.join("data", nm), "wb") as f:
                         f.write(up.getbuffer())
-                    st.success(f"Criado!");
+
+                    # Salva mensagem e força limpeza via Session State
+                    st.session_state['feedback_sucesso'] = f"Mês {nm} criado com sucesso!"
+
+                    # Truque do Streamlit: Deletar a key reseta o widget
+                    if "novo_mes_nome" in st.session_state: del st.session_state["novo_mes_nome"]
+                    if "novo_mes_arq" in st.session_state: del st.session_state["novo_mes_arq"]
+
                     st.rerun()
+
         with c2:
             st.warning("**Atualizar Base Global**")
             up_xlsx = st.file_uploader("statusContatos.xlsx", type=['xlsx'], key="global_xlsx")
@@ -534,6 +550,7 @@ def main_app():
                     st.info(
                         f"Analisando de **{df_filtrado['Dia'].min()}** até **{df_filtrado['Dia'].max()}** ({len(df_filtrado)} registros)")
                     renderizar_metricas_limpas(df_filtrado, "personalizado")
+
 
 # --- EXECUÇÃO ---
 if __name__ == "__main__":
