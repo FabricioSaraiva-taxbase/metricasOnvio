@@ -38,7 +38,7 @@ def autenticar():
         with c2:
             st.markdown("<br><br>", unsafe_allow_html=True)
             if os.path.exists("logo_taxbase.png"):
-                st.image("logo_taxbase.png", use_container_width=True)
+                st.image("logo_taxbase.png", width='content')
             else:
                 st.markdown(f"<h2 style='text-align: center; color: {COR_PRIMARIA};'>TAXBASE</h2>",
                             unsafe_allow_html=True)
@@ -48,7 +48,7 @@ def autenticar():
             with st.form("login_form"):
                 usuario = st.text_input("Usuário").lower().strip()
                 senha = st.text_input("Senha", type="password")
-                submit = st.form_submit_button("Entrar", use_container_width=True)
+                submit = st.form_submit_button("Entrar", width='stretch')
 
             if submit:
                 if usuario in CREDENCIAIS and senha == SENHA_PADRAO:
@@ -266,13 +266,13 @@ def renderizar_metricas_limpas(df, titulo_contexto, caminho_arquivo_atual=None):
                              color_discrete_sequence=[COR_PRIMARIA])
             fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'}, plot_bgcolor='rgba(0,0,0,0)',
                                   margin=dict(l=0, r=0, t=0, b=0))
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width='stretch')
 
             if filtro_cliente == "Todos (Visão Geral)":
                 with st.expander("Ver Ranking Completo (Expandir)"):
                     ranking_full = df_ranking['Cliente_Final'].value_counts().reset_index()
                     ranking_full.columns = ['Cliente', 'Volume']
-                    st.dataframe(ranking_full, use_container_width=True, hide_index=True)
+                    st.dataframe(ranking_full, width='stretch', hide_index=True)
 
     with c_g2:
         st.markdown("#### Atendimentos por Dia")
@@ -310,10 +310,10 @@ def renderizar_metricas_limpas(df, titulo_contexto, caminho_arquivo_atual=None):
             fig_line.update_traces(line_color=COR_PRIMARIA, line_width=3)
             fig_line.update_layout(plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=0, b=0))
             fig_line.update_yaxes(rangemode="tozero", dtick=1 if timeline['Volume'].max() < 20 else None)
-            st.plotly_chart(fig_line, use_container_width=True)
+            st.plotly_chart(fig_line, width='stretch')
 
     st.markdown("### 📋 Detalhamento")
-    st.dataframe(df_ranking[['Data', 'Cliente_Final', 'Contato', 'Atendido por', 'Status']], use_container_width=True,
+    st.dataframe(df_ranking[['Data', 'Cliente_Final', 'Contato', 'Atendido por', 'Status']], width='stretch',
                  hide_index=True)
 
     # --- OPÇÕES DE ADMINISTRADOR (LISTA ÚNICA) ---
@@ -376,7 +376,7 @@ def renderizar_metricas_limpas(df, titulo_contexto, caminho_arquivo_atual=None):
 
 
 def main_app():
-    # --- CSS BLINDADO V5 (REVISADO) ---
+    # --- CSS BLINDADO V5 (MANTIDO) ---
     st.markdown(f"""
         <style>
         /* 1. LAYOUT GERAL */
@@ -447,7 +447,7 @@ def main_app():
     c1, c2, c3 = st.columns([3, 2, 3])
     with c2:
         if os.path.exists("logo_taxbase.png"):
-            st.image("logo_taxbase.png", use_container_width=True)
+            st.image("logo_taxbase.png", width='stretch')
         else:
             st.markdown(f"<h1 style='text-align: center; color: {COR_PRIMARIA};'>TAXBASE</h1>", unsafe_allow_html=True)
 
@@ -455,19 +455,19 @@ def main_app():
         f"""<div style="text-align: center; margin-top: -15px;"><h4 style='color: {COR_SECUNDARIA}; font-weight: 300;'>Monitoramento de Atendimentos | Messenger</h4></div>""",
         unsafe_allow_html=True)
 
-    # Controles de Admin e Logout
-    c_blank, c_admin, c_logout = st.columns([8, 0.5, 0.5])
+    # --- CONTROLES DE ADMIN (SEM BARRA HORIZONTAL) ---
+    # Colunas: [8.5 Vazio] [0.5 Config] -> Joga a engrenagem para a direita absoluta
+    c_blank, c_config = st.columns([8.5, 0.5])
+
     if 'show_config' not in st.session_state: st.session_state['show_config'] = False
 
-    with c_admin:
+    with c_config:
         if st.session_state['user_role'] == 'admin':
             if st.button("⚙️", help="Configurações"):
                 st.session_state['show_config'] = not st.session_state['show_config']
                 st.rerun()
-    with c_logout:
-        if st.button("🚪", help="Sair"):
-            st.session_state['logged_in'] = False
-            st.rerun()
+
+    # REMOVIDO: st.markdown("---") <- AQUI ESTAVA O CULPADO DA LINHA
 
     # --- LÓGICA DE EXIBIÇÃO ---
 
@@ -529,7 +529,6 @@ def main_app():
                             df = carregar_dados_mes(caminho)
 
                             if df is not None:
-                                # AQUI ESTÁ A MUDANÇA: Passamos o caminho do arquivo
                                 renderizar_metricas_limpas(df, f"{ano}_{j}", caminho_arquivo_atual=caminho)
 
         # Aba de Análise Personalizada
