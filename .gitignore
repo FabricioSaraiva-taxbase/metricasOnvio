@@ -1,0 +1,31 @@
+# Secrets
+service_account.json
+
+# Environment
+.venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+.vscode/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data & Artifacts
+# data/  <-- Descomente se não quiser versionar os CSVs
+# statusContatos.xlsx <-- Descomente se não quiser versionar
+
+# Temporary / Debug
+commit_message.txt
+debug_dump.py
+debug_page.html
+page_dump.html
+test_results/
+~$*
+*.tmp
+*.bak
