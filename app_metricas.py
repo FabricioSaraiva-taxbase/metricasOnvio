@@ -10,15 +10,34 @@ from datetime import datetime, timedelta
 from openpyxl import load_workbook  # IMPORTANTE: Para salvar sem perder formatação
 
 # --- INTEGRAÇÃO BIGQUERY (CONFIGURAÇÃO AUTOMÁTICA) ---
+HAS_BQ = False
 try:
     from google.cloud import bigquery
-
-    # Procura a chave na pasta raiz
-    if os.path.exists("service_account.json"):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "service_account.json"
+    from google.oauth2 import service_account
+    
     HAS_BQ = True
+
+    def get_bq_client():
+        """Retorna cliente BQ autenticado via arquivo local ou Secrets."""
+        try:
+            # 1. Arquivo Local (Prioridade Dev)
+            if os.path.exists("service_account.json"):
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "service_account.json"
+                return bigquery.Client()
+            
+            # 2. Secrets do Streamlit Cloud (Prioridade Prod)
+            if "gcp_service_account" in st.secrets:
+                info = st.secrets["gcp_service_account"]
+                creds = service_account.Credentials.from_service_account_info(info)
+                return bigquery.Client(credentials=creds, project=creds.project_id)
+            
+            return None
+        except Exception:
+            return None
+
 except ImportError:
     HAS_BQ = False
+    def get_bq_client(): return None
 
 
 # --- CONFIGURAÇÃO INICIAL ---
@@ -741,7 +760,7 @@ def carregar_dados_mes(identificador):
             if len(partes) >= 2:
                 ano, mes = partes[0], partes[1]
                 tabela = f"atendimentos_{ano}_{mes}"
-                client = bigquery.Client()
+                client = get_bq_client()
                 query = f"SELECT * FROM `taxbase-metricasmessenger.metricas.{tabela}`"
                 df = client.query(query).to_dataframe()
         except Exception:
@@ -808,9 +827,9 @@ def listar_arquivos_por_ano():
     if not os.path.exists("data"): os.makedirs("data")
 
     # 1. LISTAR DO BIGQUERY (NUVEM)
-    if HAS_BQ and os.path.exists("service_account.json"):
+    if HAS_BQ:
         try:
-            client = bigquery.Client()
+            client = get_bq_client()
             dataset_ref = client.dataset("metricas")
             tables = list(client.list_tables(dataset_ref))
 
@@ -894,9 +913,9 @@ def load_month_labels():
     labels = _load_labels_json()
     
     # Tenta complementar/sobrescrever com BigQuery
-    if HAS_BQ and os.path.exists("service_account.json"):
+    if HAS_BQ:
         try:
-            client = bigquery.Client()
+            client = get_bq_client()
             query = "SELECT mes_key, label FROM `taxbase-metricasmessenger.metricas.month_labels` WHERE label IS NOT NULL AND label != ''"
             df = client.query(query).to_dataframe()
             bq_labels = dict(zip(df['mes_key'], df['label']))
@@ -909,9 +928,9 @@ def load_month_labels():
 def save_month_label(mes_key, label):
     """Salva label. Tenta BigQuery, se falhar (billing) usa JSON local."""
     # Tenta BigQuery primeiro
-    if HAS_BQ and os.path.exists("service_account.json"):
+    if HAS_BQ:
         try:
-            client = bigquery.Client()
+            client = get_bq_client()
             del_query = f"DELETE FROM `taxbase-metricasmessenger.metricas.month_labels` WHERE mes_key = '{mes_key}'"
             client.query(del_query).result()
             if label.strip():
@@ -1131,7 +1150,7 @@ def renderizar_metricas_limpas(df, titulo_contexto, caminho_arquivo_atual=None):
             "📆 Exibir calendário completo", 
             value=True, 
             key=f"chk_{titulo_contexto}",
-            help="Inclui dias com zero atendimentos para mostrar a evolução temporal correta."
+            help="Inclui dias com zero atendimentos."
         )
 
         if not df_ranking.empty:
