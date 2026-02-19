@@ -1,31 +1,90 @@
-# Secrets
-service_account.json
-
-# Environment
-.venv/
-.env
-
-# Python
-__pycache__/
-*.py[cod]
-
-# IDE
-.idea/
-.vscode/
-
-# Streamlit
-.streamlit/secrets.toml
-
-# Data & Artifacts
-# data/  <-- Descomente se não quiser versionar os CSVs
-# statusContatos.xlsx <-- Descomente se não quiser versionar
-
-# Temporary / Debug
-commit_message.txt
-debug_dump.py
-debug_page.html
-page_dump.html
-test_results/
-~$*
+# General
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.log
 *.tmp
 *.bak
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit (Legacy/Migration)
+.streamlit/secrets.toml
+
+# Node.js / Next.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+out/
+build/
+.vercel
+dist/
+
+# Google Cloud
+service_account.json
+gcloud/
+
+# Project Specific
+statusContatos.xlsx
+dataBackup/
+*.csv
+# Keep specific CSVs if needed, but generally ignore data dumps
+!metricas-onvio/data/initial_seed.csv
+
+# Testing
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+test_results/

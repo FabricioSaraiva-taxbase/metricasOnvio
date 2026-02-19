@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Auditor Fiscal - Taxbase Hub">
+    <title>Auditor Fiscal - Taxbase</title>
+    <link rel="icon" type="image/png" href="/static/img/logo_taxbase.png">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* Full-width override */
+        .container {
+            max-width: 100% !important;
+            padding: 0 40px;
+        }
+
+        .company-row {
+            background: var(--bg-card);
+            border: 1px solid var(--gray-border);
+            border-radius: var(--radius-md);
+            padding: 18px 24px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            animation: fadeInUp 0.4s ease both;
+        }
+
+        .company-row:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(0, 155, 214, 0.3);
+        }
+
+        .company-name {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .company-cnpj {
+            font-size: 0.8rem;
+            color: var(--gray);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .company-progress {
+            flex: 1;
+            max-width: 220px;
+        }
+
+        .company-stats {
+            display: flex;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .stat-chip {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .stat-ok {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success);
+        }
+
+        .stat-pending {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning);
+        }
+
+        .stat-ignored {
+            background: rgba(127, 140, 141, 0.1);
+            color: var(--gray);
+        }
+
+        .obligation-item {
+            padding: 10px 16px;
+            margin: 6px 0;
+            border-radius: var(--radius-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.9rem;
+        }
+
+        .obligation-ok {
+            background: rgba(39, 174, 96, 0.08);
+            border-left: 3px solid var(--success);
+        }
+
+        .obligation-pending {
+            background: rgba(243, 156, 18, 0.08);
+            border-left: 3px solid var(--warning);
+        }
+
+        .obligation-ignored {
+            background: rgba(127, 140, 141, 0.06);
+            border-left: 3px solid var(--gray-light);
+            opacity: 0.7;
+        }
+
+        /* CHARTS UPDATED - ELEGANT GRID */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--gray-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .chart-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--gray-border);
+            padding-bottom: 12px;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+
+        /* Height Control */
+        .h-sm {
+            height: 320px;
+        }
+
+        .h-md {
+            height: 400px;
+        }
+
+        .h-lg {
+            height: 650px;
+        }
+
+        /* Tall for lists */
+
+        @media (min-width: 768px) {
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .col-span-2-md {
+                grid-column: span 2;
+            }
+        }
+
+        @media (min-width:1400px) {
+            .charts-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .col-span-1 {
+                grid-column: span 1;
+            }
+
+            .col-span-2 {
+                grid-column: span 2;
+            }
+
+            .col-span-3 {
+                grid-column: span 3;
+            }
+        }
+
+        .file-item {
+            background: var(--bg-card);
+            border: 1px solid var(--gray-border);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            animation: fadeInUp 0.3s ease both;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .file-meta {
+            font-size: 0.78rem;
+            color: var(--gray);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+        }
+
+        .view-toggle .btn {
+            border-radius: 8px;
+        }
+
+        .view-toggle .btn.active {
+            background: var(--blue);
+            color: white;
+        }
+
+        .kpi {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi:hover {
+            transform: translateY(-2px);
+        }
+
+        .kpi.active-filter {
+            border: 2px solid var(--blue);
+            box-shadow: 0 0 10px rgba(0, 155, 214, 0.2);
+        }
+
+        .btn-xs {
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toast-container" class="toast-container"></div>
+    <div id="no-access" class="hidden" style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
+        <div class="card" style="text-align:center;max-width:400px;">
+            <div style="font-size:3rem;margin-bottom:16px;">🔒</div>
+            <h2>Acesso Negado</h2>
+            <p class="text-muted mt-1">Você não tem permissão para acessar o Auditor Fiscal.</p>
+            <a href="/" class="btn btn-primary mt-3">← Voltar ao Hub</a>
+        </div>
+    </div>
+    <div id="auditor-app" class="hidden">
+        <nav class="navbar">
+            <div class="navbar-inner">
+                <div class="navbar-brand">
+                    <a href="/" style="display:flex;align-items:center;gap:12px;">
+                        <img src="/static/img/logo_taxbase.png" alt="Taxbase">
+                    </a>
+                </div>
+                <div class="navbar-right">
+                    <div class="user-info">
+                        <div class="user-name" id="aud-user-name"></div>
+                        <div class="user-role" id="aud-user-role"></div>
+                    </div>
+                    <span id="aud-user-badge"></span>
+                    <div class="view-toggle">
+                        <button class="btn btn-sm active" id="btn-list" onclick="switchView('list')">📋 Lista</button>
+                        <button class="btn btn-sm" id="btn-dashboard" onclick="switchView('dashboard')">📊
+                            Dashboard</button>
+                    </div>
+                    <a href="/" class="btn btn-sm btn-secondary">← Hub</a>
+                </div>
+            </div>
+        </nav>
+        <main class="container" style="padding-top:32px;padding-bottom:32px;">
+            <div class="flex items-center justify-between mb-3"
+                style="animation:fadeInUp 0.4s ease both; flex-wrap:wrap; gap:16px;">
+                <div>
+                    <h1>🔍 Auditor Fiscal</h1>
+                    <p class="text-muted">Painel de controle de obrigações fiscais</p>
+                </div>
+                <div class="flex gap-sm" style="align-items:center;">
+                    <select id="periodo-select" class="input"
+                        style="min-width:140px; font-size:0.9rem; padding:6px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-card); font-weight:600; cursor:pointer;"
+                        onchange="onPeriodoChange()">
+                    </select>
+                    <span class="badge"
+                        style="background:var(--bg-card);border:1px solid var(--border-color);font-size:0.9rem;">🕒
+                        <span id="header-update">--:--</span></span>
+                </div>
+            </div>
+            <!-- KPIs INTERACTIVE -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px;"
+                id="kpi-grid">
+                <div class="kpi kpi-highlight active-filter" id="kpi-card-all" onclick="filterStatus('all')">
+                    <div class="kpi-icon kpi-icon-blue">🏢</div>
+                    <div>
+                        <div class="kpi-value" id="kpi-empresas">-</div>
+                        <div class="kpi-label">Empresas</div>
+                    </div>
+                </div>
+                <div class="kpi" id="kpi-card-ok" onclick="filterStatus('ok')">
+                    <div class="kpi-icon kpi-icon-green">✅</div>
+                    <div>
+                        <div class="kpi-value" id="kpi-ok">-</div>
+                        <div class="kpi-label">Entregues</div>
+                    </div>
+                </div>
+                <div class="kpi" id="kpi-card-pending" onclick="filterStatus('pending')">
+                    <div class="kpi-icon kpi-icon-orange">⚠️</div>
+                    <div>
+                        <div class="kpi-value" id="kpi-pending">-</div>
+                        <div class="kpi-label">Pendentes</div>
+                    </div>
+                </div>
+                <div class="kpi" style="cursor:default;">
+                    <div class="kpi-icon kpi-icon-red">📄</div>
+                    <div>
+                        <div class="kpi-value" id="kpi-rate">-</div>
+                        <div class="kpi-label">Taxa de Entrega</div>
+                    </div>
+                </div>
+            </div>
+            <!-- SEARCH -->
+            <div class="mb-3" style="max-width:480px;">
+                <input type="text" class="input input-search" id="aud-search" placeholder="Buscar empresa ou CNPJ..."
+                    oninput="filterCompanies()">
+            </div>
+            <!-- LIST VIEW -->
+            <div id="view-list">
+                <div id="companies-list">
+                    <div class="loader">
+                        <div class="spinner"></div>Carregando dados...
+                    </div>
+                </div>
+            </div>
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="hidden">
+                <div class="charts-grid">
+                    <!-- Row 1: Ranking de Pendências (Full Width) -->
+                    <div class="chart-card col-span-3">
+                        <div class="chart-header">
+                            <h3 class="chart-title">🚨 Ranking de Pendências (Top 15)</h3>
+                        </div>
+                        <div class="chart-container h-md">
+                            <canvas id="chart-pending"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Status (Left) + Top Entregas (Right) -->
+                    <div class="chart-card col-span-3 col-span-1-md">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Status Geral (Concluídas vs Não Concluídas)</h3>
+                        </div>
+                        <div class="chart-container h-sm">
+                            <canvas id="chart-status"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card col-span-3 col-span-2-md">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Total de Arquivos por Obrigação</h3>
+                        </div>
+                        <div class="chart-container h-sm">
+                            <canvas id="chart-obligations"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Daily (Full) -->
+                    <div class="chart-card col-span-3">
+                        <div class="chart-header">
+                            <h3 class="chart-title">📈 Taxa de Uploads por Dia</h3>
+                            <small class="text-muted" id="chart-daily-subtitle">Período selecionado</small>
+                        </div>
+                        <div class="chart-container h-md">
+                            <canvas id="chart-daily"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- UNIDENTIFIED (ADMIN ONLY) -->
+            <div id="unidentified-section" class="hidden" style="margin-top:40px;">
+                <h2 class="mb-2">📁 Arquivos Não Identificados</h2>
+                <div id="unidentified-list"></div>
+            </div>
+        </main>
+        <footer class="footer">
+            <span class="footer-brand">TAXBASE</span> • Auditor Fiscal<br>
+            <small class="text-muted">© 2026 • Todos os direitos reservados</small>
+        </footer>
+    </div>
+
+    <!-- COMPANY DETAIL MODAL -->
+    <div id="company-modal" class="modal-overlay hidden" onclick="if(event.target===this) closeCompanyModal()">
+        <div class="modal" style="max-width:800px;">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modal-company-name"></h2>
+                    <small class="text-muted" id="modal-company-cnpj"></small>
+                </div>
+                <button class="modal-close" onclick="closeCompanyModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;" id="modal-obligations"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALLOCATION MODAL -->
+    <div id="allocation-modal" class="modal-overlay hidden" onclick="if(event.target===this) closeAllocationModal()">
+        <div class="modal" style="max-width:500px;">
+            <div class="modal-header">
+                <h2>Alocar / Editar Arquivo</h2>
+                <button class="modal-close" onclick="closeAllocationModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p id="alloc-filename" class="text-muted mb-3"></p>
+                <input type="hidden" id="alloc-id">
+                <div class="form-group">
+                    <label>Empresa</label>
+                    <select id="alloc-cnpj" class="input" style="width:100%"></select>
+                </div>
+                <div class="form-group">
+                    <label>Obrigação</label>
+                    <select id="alloc-obr" class="input" style="width:100%"></select>
+                </div>
+                <div class="flex justify-end gap-sm mt-3">
+                    <button class="btn btn-secondary" onclick="closeAllocationModal()">Cancelar</button>
+                    <button class="btn btn-primary" onclick="submitAllocation()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==============================================================================
+        // AUDITOR FISCAL - JS
+        // ==============================================================================
+        let auditorData = [];
+        let auditorMetas = [];
+        let auditorDaily = [];
+        let auditorUser = null;
+        let isAdmin = false;
+        let activeFilter = 'all';
+        let periodoAtual = '';
+
+        function gerarPeriodos(n) {
+            const opcoes = [];
+            const hoje = new Date();
+            for (let i = 1; i <= n; i++) {
+                const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const ano = d.getFullYear();
+                opcoes.push(`${mes}/${ano}`);
+            }
+            return opcoes;
+        }
+
+        function initPeriodoSelect() {
+            const sel = document.getElementById('periodo-select');
+            const opcoes = gerarPeriodos(12);
+            sel.innerHTML = opcoes.map((p, i) =>
+                `<option value="${p}" ${i === 0 ? 'selected' : ''}>🗓️ ${p}</option>`
+            ).join('');
+            periodoAtual = opcoes[0];
+        }
+
+        function onPeriodoChange() {
+            const sel = document.getElementById('periodo-select');
+            periodoAtual = sel.value;
+            // showToast(`📅 Carregando: ${periodoAtual}...`, 'info');
+            loadPainel();
+        }
+        window.onPeriodoChange = onPeriodoChange;
+
+        function getToken() { return localStorage.getItem('taxbase_token'); }
+        async function api(url, options = {}) {
+            const token = getToken();
+            const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const res = await fetch(url, { ...options, headers });
+            const data = await res.json();
+            if (res.status === 401) { window.location.href = '/'; return null; }
+            if (!res.ok) throw new Error(data.error || 'Erro');
+            return data;
+        }
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const icons = { success: '✅', error: '❌', warning: '⚠️' };
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<span>${icons[type] || ''}</span> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+        function switchView(view) {
+            document.getElementById('view-list').classList.toggle('hidden', view !== 'list');
+            document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
+            document.getElementById('btn-list').classList.toggle('active', view === 'list');
+            document.getElementById('btn-dashboard').classList.toggle('active', view === 'dashboard');
+            if (view === 'dashboard') renderCharts();
+        }
+
+        async function loadPainel() {
+            try {
+                const url = periodoAtual ? `/api/auditor/painel?periodo=${encodeURIComponent(periodoAtual)}` : '/api/auditor/painel';
+                // console.log("Fetching:", url);
+                const data = await api(url);
+                if (!data) return;
+
+                auditorData = data.painel || [];
+                // showToast(`✅ ${auditorData.length} registros carregados.`, 'success');
+
+                auditorMetas = data.metas || [];
+                auditorDaily = data.daily_stats || [];
+
+                if (data.competencia) {
+                    periodoAtual = data.competencia;
+                    const sel = document.getElementById('periodo-select');
+                    if (sel) sel.value = periodoAtual;
+                }
+                if (data.last_update) {
+                    const date = new Date(data.last_update);
+                    document.getElementById('header-update').textContent = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                }
+
+                // Update chart subtitle
+                const subtitle = document.getElementById('chart-daily-subtitle');
+                if (subtitle) subtitle.textContent = `Comp: ${periodoAtual}`;
+
+                let totalEntregas = 0, totalPendencias = 0;
+                auditorData.forEach(c => { totalEntregas += c.entregues.length; totalPendencias += c.qtd_pendentes; });
+                const totalObrigacoes = totalEntregas + totalPendencias;
+                const rateVal = totalObrigacoes > 0 ? (totalEntregas / totalObrigacoes) * 100 : 0;
+                const rate = parseFloat(rateVal.toFixed(1));
+
+                document.getElementById('kpi-empresas').textContent = auditorData.length;
+                document.getElementById('kpi-ok').textContent = totalEntregas;
+                document.getElementById('kpi-pending').textContent = totalPendencias;
+                document.getElementById('kpi-rate').textContent = rate + '%';
+
+                renderCompanies();
+
+                if (isAdmin) {
+                    document.getElementById('unidentified-section').classList.remove('hidden');
+                    loadUnidentified();
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('companies-list').innerHTML = '<div class="loader">❌ Erro ao carregar dados do BigQuery</div>';
+            }
+        }
+
+        function filterStatus(status) {
+            if (activeFilter === status && status !== 'all') { activeFilter = 'all'; }
+            else { activeFilter = status; }
+
+            document.querySelectorAll('.kpi').forEach(k => k.classList.remove('active-filter'));
+            const cardId = status === 'all' ? 'kpi-card-all' : (status === 'ok' ? 'kpi-card-ok' : 'kpi-card-pending');
+            const card = document.getElementById(cardId);
+            if (card) card.classList.add('active-filter');
+
+            renderCompanies();
+        }
+
+        function renderCompanies() {
+            const container = document.getElementById('companies-list');
+            let filtered = auditorData;
+
+            // Search filter
+            const q = document.getElementById('aud-search').value.toLowerCase();
+            if (q) {
+                filtered = filtered.filter(c => c.empresa.toLowerCase().includes(q) || c.cnpj.includes(q) || (c.grupo || '').toLowerCase().includes(q));
+            }
+
+            // KPI filter
+            if (activeFilter === 'ok') {
+                filtered = filtered.filter(c => c.entregues.length > 0);
+            } else if (activeFilter === 'pending') {
+                filtered = filtered.filter(c => c.qtd_pendentes > 0);
+            }
+
+            if (!filtered.length) { container.innerHTML = '<div class="loader">Nenhum resultado encontrado</div>'; return; }
+
+            const groups = {};
+            filtered.forEach(c => {
+                const g = c.grupo || 'Sem Grupo';
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(c);
+            });
+            const sortedGroups = Object.keys(groups).sort();
+
+            let html = '';
+            sortedGroups.forEach((g, idx) => {
+                const list = groups[g];
+                const total = list.length;
+                const pending = list.reduce((acc, c) => acc + c.qtd_pendentes, 0);
+
+                html += `
+                    <details ${idx === 0 ? 'open' : ''} style="margin-bottom:16px; border:1px solid var(--gray-border); border-radius:var(--radius-md); overflow:hidden; background:var(--bg-card);">
+                        <summary style="padding:12px 16px; cursor:pointer; list-style:none; display:flex; align-items:center; justify-content:space-between; font-weight:600; outline:none;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="arrow" style="transition:transform 0.2s;">▶</span>
+                                📂 ${g}
+                            </div>
+                            <div class="flex gap-sm">
+                                <span class="badge" style="background:var(--bg); border:1px solid var(--gray-border); font-size:0.8rem;">🏢 ${total}</span>
+                                <span class="badge" style="background:rgba(243,156,18,0.1);color:var(--warning);font-size:0.8rem;">⚠️ ${pending} pendências</span>
+                            </div>
+                        </summary>
+                        <div style="padding:12px; background:var(--bg); border-top:1px solid var(--gray-border);">
+                `;
+                html += list.map((c, i) => {
+                    const pctVal = c.progresso * 100;
+                    const pct = parseFloat(pctVal.toFixed(1));
+                    const barColor = pct >= 100 ? 'var(--success)' : pct > 50 ? 'var(--blue)' : 'var(--warning)';
+                    const globalIdx = auditorData.findIndex(x => x.cnpj === c.cnpj);
+                    return `
+                    <div class="company-row" style="margin-bottom:8px;" onclick="openCompanyModal(${globalIdx})">
+                        <div style="min-width:200px;">
+                            <div class="company-name">${c.empresa}</div>
+                            <div class="company-cnpj">${c.cnpj}</div>
+                        </div>
+                        <div class="company-progress">
+                            <div class="progress" style="margin-bottom:4px;"><div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,${barColor},${barColor})"></div></div>
+                            <small class="text-muted text-xs">${pct}% concluído</small>
+                        </div>
+                        <div class="company-stats">
+                            <span class="stat-chip stat-ok">✅ ${c.entregues.length}</span>
+                            <span class="stat-chip stat-pending">⚠️ ${c.qtd_pendentes}</span>
+                            ${c.faltantes_ignorados.length ? `<span class="stat-chip stat-ignored">💤 ${c.faltantes_ignorados.length}</span>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+                html += `</div></details>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- Allocation Logic ---
+        function openAllocationModal(id, filename, currentCnpj, currentObr, dataProc) {
+            document.getElementById('alloc-id').value = id;
+            document.getElementById('alloc-id').dataset.dataProc = dataProc || '';
+            document.getElementById('alloc-filename').textContent = `📄 ${filename}`;
+
+            const cnpjSelect = document.getElementById('alloc-cnpj');
+            const obrSelect = document.getElementById('alloc-obr');
+
+            // Populate Companies (unique)
+            cnpjSelect.innerHTML = '<option value="">Selecione a empresa...</option>';
+            const uniqueCompanies = [...new Set(auditorData.map(c => JSON.stringify({ cnpj: c.cnpj, nome: c.empresa })))].map(JSON.parse);
+            uniqueCompanies.sort((a, b) => a.nome.localeCompare(b.nome));
+            uniqueCompanies.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.cnpj;
+                opt.textContent = `${c.nome} (${c.cnpj})`;
+                cnpjSelect.appendChild(opt);
+            });
+
+            // Populate Obligations
+            obrSelect.innerHTML = '<option value="">Selecione a obrigação...</option>';
+            const metas = auditorMetas.length ? auditorMetas : ['DCTF', 'GIA', 'SPED FISCAL', 'SPED CONTRIBUICOES', 'REINF'];
+            metas.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                obrSelect.appendChild(opt);
+            });
+
+            // Pre-select if processing a reallocation
+            if (currentCnpj) cnpjSelect.value = currentCnpj;
+            if (currentObr) obrSelect.value = currentObr;
+
+            document.getElementById('allocation-modal').classList.remove('hidden');
+        }
+
+        function closeAllocationModal() { document.getElementById('allocation-modal').classList.add('hidden'); }
+
+        async function submitAllocation() {
+            const id = document.getElementById('alloc-id').value;
+            const cnpj = document.getElementById('alloc-cnpj').value;
+            const obr = document.getElementById('alloc-obr').value;
+
+            if (!cnpj || !obr) { showToast('Selecione empresa e obrigação', 'warning'); return; }
+
+            try {
+                const res = await api('/api/auditor/allocate', { method: 'POST', body: JSON.stringify({ id_arquivo: id, cnpj, obrigacao: obr, data_processamento: document.getElementById('alloc-id').dataset.dataProc || '' }) });
+                showToast(res.message);
+                closeAllocationModal();
+                closeCompanyModal();
+                loadPainel(); // Reload entire painel to reflect move
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function loadUnidentified() {
+            const container = document.getElementById('unidentified-list');
+            try {
+                const data = await api('/api/auditor/unidentified');
+                if (!data || !data.length) { container.innerHTML = '<p class="text-muted">Nenhum arquivo não identificado.</p>'; return; }
+                container.innerHTML = data.map(f => {
+                    const dataProc = f.data_processamento || '';
+                    const safeName = (f.nome_arquivo || '').replace(/'/g, '');
+                    return `
+            <div class="file-item">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="file-name">${f.nome_arquivo || f.id_arquivo}</div>
+                        <div class="file-meta">${f.data_processamento ? new Date(f.data_processamento).toLocaleString('pt-BR') : ''}</div>
+                    </div>
+                    <div class="flex gap-sm">
+                         <button class="btn btn-sm btn-primary" onclick="openAllocationModal('${f.id_arquivo}', '${safeName}', '', '', '${dataProc}')">✏️ Alocar</button>
+                        ${f.link_arquivo ? `<a href="${f.link_arquivo}" target="_blank" class="btn btn-sm btn-secondary">🔗 Ver</a>` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="discardFile('${f.id_arquivo}','${safeName}','${dataProc}')">🗑️</button>
+                    </div>
+                </div>
+            </div>`;
+                }).join('');
+            } catch (e) { container.innerHTML = '<p class="text-muted">Erro ao carregar</p>'; }
+        }
+
+        async function discardFile(id, nome, dataProc) {
+            if (!confirm('Descartar este arquivo?')) return;
+            try {
+                await api('/api/auditor/discard', { method: 'POST', body: JSON.stringify({ id_arquivo: id, nome_arquivo: nome, data_processamento: dataProc || '' }) });
+                showToast('Arquivo descartado!');
+                loadUnidentified();
+            } catch (e) { }
+        }
+
+        // --- Company Modal & Helper ---
+        function filterCompanies() { renderCompanies(); }
+        function openCompanyModal(idx) {
+            const c = auditorData[idx];
+            document.getElementById('modal-company-name').textContent = `🏢 ${c.empresa}`;
+            document.getElementById('modal-company-cnpj').textContent = `CNPJ: ${c.cnpj}`;
+            const body = document.getElementById('modal-obligations');
+
+            let entreguesHTML = '<div><h4 style="margin-bottom:12px;">✅ Entregues</h4>';
+            if (c.entregues.length) {
+                entreguesHTML += c.entregues.map(obr => {
+                    const files = (c.arquivos && c.arquivos[obr]) || [];
+                    const filesLinks = files.map(f => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;font-size:0.85rem;background:var(--bg);padding:4px 8px;border-radius:4px;">
+                            <a href="${f.link_arquivo || '#'}" target="_blank" style="text-decoration:none;flex:1;">📄 ${f.periodo} - ${f.nome_arquivo}</a>
+                            ${isAdmin ? `<div style="display:flex;gap:4px;margin-left:8px;">
+                                <button class="btn btn-xs btn-secondary" title="Realocar Arquivo" onclick="event.stopPropagation(); openAllocationModal('${f.id_arquivo}', '${(f.nome_arquivo || '').replace(/'/g, '')}', '${c.cnpj}', '${obr}', '${f.data_proc_full || ''}')">✏️</button>
+                                <button class="btn btn-xs btn-danger" title="Excluir Arquivo" onclick="event.stopPropagation(); deleteFileFromCompany('${f.id_arquivo}', '${(f.nome_arquivo || '').replace(/'/g, '')}', '${f.data_proc_full || ''}')">🗑️</button>
+                            </div>` : ''}
+                        </div>
+                    `).join('');
+                    return `<div class="obligation-item obligation-ok"><span>📄 ${obr}</span>${filesLinks}</div>`;
+                }).join('');
+            } else { entreguesHTML += '<p class="text-muted">Nenhuma entrega identificada.</p>'; }
+            entreguesHTML += '</div>';
+
+            let pendentesHTML = '<div><h4 style="margin-bottom:12px;">⚠️ Pendentes</h4>';
+            if (c.faltantes_ativos.length) {
+                pendentesHTML += c.faltantes_ativos.map(obr => `
+            <div class="obligation-item obligation-pending"><div style="display:flex;justify-content:space-between;width:100%;"><span>⚠️ ${obr}</span>${isAdmin ? `<button class="btn btn-sm btn-secondary" onclick="toggleIgnore('${c.cnpj}','${obr}')">💤 Adormecer</button>` : ''}</div></div>`).join('');
+            } else if (!c.faltantes_ignorados.length) { pendentesHTML += '<p style="color:var(--success);font-weight:600;">✅ Tudo em dia!</p>'; }
+            if (c.faltantes_ignorados.length) {
+                pendentesHTML += '<h4 style="margin:16px 0 8px;">💤 Adormecidos</h4>';
+                pendentesHTML += c.faltantes_ignorados.map(obr => `
+            <div class="obligation-item obligation-ignored"><div style="display:flex;justify-content:space-between;width:100%;"><span>💤 ${obr}</span>${isAdmin ? `<button class="btn btn-sm btn-secondary" onclick="toggleIgnore('${c.cnpj}','${obr}')">🔔 Reativar</button>` : ''}</div></div>`).join('');
+            }
+            pendentesHTML += '</div>';
+            body.innerHTML = entreguesHTML + pendentesHTML;
+            document.getElementById('company-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeCompanyModal() { document.getElementById('company-modal').classList.add('hidden'); document.body.style.overflow = ''; }
+        async function deleteFileFromCompany(id, nome, dataProc) {
+            if (!confirm(`Tem certeza que deseja excluir o arquivo "${nome}"?`)) return;
+            try {
+                await api('/api/auditor/discard', { method: 'POST', body: JSON.stringify({ id_arquivo: id, nome_arquivo: nome, data_processamento: dataProc || '' }) });
+                showToast('Arquivo excluído com sucesso!');
+                closeCompanyModal();
+                loadPainel();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+        async function toggleIgnore(cnpj, obrigacao) {
+            try { const res = await api('/api/auditor/toggle-ignore', { method: 'POST', body: JSON.stringify({ cnpj, obrigacao }) }); showToast(res.message); closeCompanyModal(); loadPainel(); } catch (e) { }
+        }
+
+        // --- Charts ---
+        let chartInstances = {};
+        function renderCharts() {
+            Object.values(chartInstances).forEach(c => c.destroy());
+            chartInstances = {};
+
+            // Chart 1: Pending (Top 15 - Reordered to Top)
+            const pendingCompanies = auditorData.filter(c => c.qtd_pendentes > 0).sort((a, b) => b.qtd_pendentes - a.qtd_pendentes).slice(0, 15);
+            chartInstances.pending = new Chart(document.getElementById('chart-pending').getContext('2d'), {
+                type: 'bar', data: { labels: pendingCompanies.map(c => c.empresa.substring(0, 18) + '...'), datasets: [{ label: 'Pendências', data: pendingCompanies.map(c => c.qtd_pendentes), backgroundColor: 'rgba(231,76,60,0.7)', borderRadius: 6 }] },
+                options: { indexAxis: 'x', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Chart 2: Status (Left)
+            const okCount = auditorData.filter(c => c.status === 'OK').length;
+            const pendCount = auditorData.length - okCount;
+            chartInstances.status = new Chart(document.getElementById('chart-status').getContext('2d'), {
+                type: 'doughnut', data: { labels: ['Concluídas', 'Não Concluídas'], datasets: [{ data: [okCount, pendCount], backgroundColor: ['rgba(39,174,96,0.8)', 'rgba(243,156,18,0.8)'], borderWidth: 0, borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+            });
+
+            // Chart 3: Obligations (Right)
+            const obligations = {};
+            auditorData.forEach(c => { if (c.entregues) c.entregues.forEach(obr => obligations[obr] = (obligations[obr] || 0) + 1); });
+            const sortedObr = Object.entries(obligations).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            chartInstances.obligations = new Chart(document.getElementById('chart-obligations').getContext('2d'), {
+                type: 'bar', data: { labels: sortedObr.map(x => x[0]), datasets: [{ label: 'Total de Arquivos', data: sortedObr.map(x => x[1]), backgroundColor: 'rgba(0,155,214,0.7)', borderRadius: 6 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // Chart 4: Daily Stats (Bottom)
+            if (auditorDaily.length > 0) {
+                chartInstances.daily = new Chart(document.getElementById('chart-daily').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: auditorDaily.map(d => { const parts = d.date.split('-'); return `${parts[2]}/${parts[1]}`; }),
+                        datasets: [{
+                            label: 'Uploads por Dia',
+                            data: auditorDaily.map(d => d.count),
+                            borderColor: '#8e44ad',
+                            backgroundColor: 'rgba(142, 68, 173, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const style = document.createElement('style');
+            style.innerHTML = `details > summary { list-style: none; } details > summary::-webkit-details-marker { display: none; } details[open] > summary .arrow { transform: rotate(90deg); } .arrow { display:inline-block; margin-right:6px; font-size:0.8rem; }`;
+            document.head.appendChild(style);
+            const token = getToken();
+            const saved = localStorage.getItem('taxbase_user');
+            if (!token || !saved) { window.location.href = '/'; return; }
+            try { auditorUser = JSON.parse(saved); } catch { window.location.href = '/'; return; }
+            isAdmin = auditorUser.permissao === 'admin';
+            document.getElementById('aud-user-name').textContent = auditorUser.nome;
+            document.getElementById('aud-user-role').textContent = auditorUser.funcao?.nome || '';
+            document.getElementById('aud-user-badge').innerHTML = `<span class="badge ${isAdmin ? 'badge-red' : 'badge-green'}">${isAdmin ? 'ADMIN' : 'USUÁRIO'}</span>`;
+            document.getElementById('auditor-app').classList.remove('hidden');
+            initPeriodoSelect();
+            loadPainel();
+        });
+    </script>
+</body>
+
+</html>

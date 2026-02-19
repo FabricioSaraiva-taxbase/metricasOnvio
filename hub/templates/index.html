@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Hub Taxbase - Plataforma de Gestão para Contabilidade">
+    <title>Hub Taxbase</title>
+    <link rel="icon" type="image/png" href="/static/img/logo_taxbase.png">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+
+    <!-- ============================================
+     TOAST CONTAINER
+============================================ -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ============================================
+     LOGIN SCREEN
+============================================ -->
+    <section id="login-screen" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="/static/img/logo_taxbase.png" alt="Taxbase">
+            </div>
+            <div class="login-title">Acesso ao Hub</div>
+
+            <div id="login-error" class="login-error hidden">
+                <span>⚠️</span>
+                <span id="login-error-text"></span>
+            </div>
+
+            <form id="login-form" onsubmit="return false;">
+                <div class="input-group">
+                    <label for="login-email">E-mail corporativo</label>
+                    <input type="email" id="login-email" class="input" placeholder="seu@email.com.br" required
+                        autocomplete="email">
+                </div>
+                <div class="input-group">
+                    <label for="login-senha">Senha</label>
+                    <input type="password" id="login-senha" class="input" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="login-btn" onclick="handleLogin()">
+                    🔐 Entrar
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <small class="text-muted">© 2026 Taxbase • Tecnologia para Contabilidade</small>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================
+     MAIN APP (DASHBOARD)
+============================================ -->
+    <section id="app-screen" class="hidden">
+
+        <!-- NAVBAR -->
+        <nav class="navbar">
+            <div class="navbar-inner">
+                <div class="navbar-brand">
+                    <img src="/static/img/logo_taxbase.png" alt="Taxbase">
+                </div>
+                <div class="navbar-right">
+                    <div class="user-info">
+                        <div class="user-name" id="nav-user-name"></div>
+                        <div class="user-role" id="nav-user-role"></div>
+                    </div>
+                    <span id="nav-user-badge"></span>
+                    <button class="btn btn-sm btn-secondary" id="btn-admin" onclick="openAdminModal()"
+                        style="display:none;">
+                        ⚙️ Gestão
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="handleLogout()">
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTENT -->
+        <main class="container" style="padding-top: 32px; padding-bottom: 32px;">
+
+            <!-- WELCOME -->
+            <div class="flex items-center justify-between mb-3" style="animation: fadeInUp 0.4s ease both">
+                <div>
+                    <h1 id="welcome-title">Olá!</h1>
+                    <p class="text-muted" id="welcome-subtitle">Seus sistemas disponíveis</p>
+                </div>
+            </div>
+
+            <!-- SEARCH -->
+            <div class="mb-3" style="max-width: 480px; animation: fadeInUp 0.5s ease both">
+                <input type="text" class="input input-search" id="search-input" placeholder="Buscar sistema..."
+                    oninput="filterSystems()">
+            </div>
+
+            <!-- SYSTEMS GRID -->
+            <div class="grid-3" id="systems-grid">
+                <div class="loader">
+                    <div class="spinner"></div>
+                    Carregando sistemas...
+                </div>
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div id="empty-state" class="hidden" style="text-align:center; padding: 60px 20px;">
+                <div style="font-size: 3rem; margin-bottom: 16px;">🔒</div>
+                <h3>Nenhum sistema encontrado</h3>
+                <p class="text-muted">Verifique sua busca ou contate o administrador.</p>
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <span class="footer-brand">TAXBASE</span> • Tecnologia para Contabilidade<br>
+            <small class="text-muted">© 2026 • Todos os direitos reservados</small>
+        </footer>
+
+    </section>
+
+    <!-- ============================================
+     ADMIN MODAL
+============================================ -->
+    <div id="admin-modal" class="modal-overlay hidden" onclick="if(event.target===this) closeAdminModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⚙️ Painel de Gestão</h2>
+                <button class="modal-close" onclick="closeAdminModal()">✕</button>
+            </div>
+
+            <!-- TABS -->
+            <div style="padding: 16px 28px 0;">
+                <div class="tabs" id="admin-tabs">
+                    <button class="tab active" onclick="switchTab('tab-sistemas', this)">➕ Sistemas</button>
+                    <button class="tab" onclick="switchTab('tab-usuarios', this)" id="tab-btn-users">👤
+                        Usuários</button>
+                    <button class="tab" onclick="switchTab('tab-funcoes', this)" id="tab-btn-roles"
+                        style="display:none;">🎭 Funções</button>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <!-- TAB: SISTEMAS -->
+                <div id="tab-sistemas" class="tab-content active">
+                    <h4 class="mb-2">Sistemas Cadastrados</h4>
+                    <div id="admin-systems-list"></div>
+                    <hr style="margin: 20px 0;">
+                    <h4 class="mb-2">➕ Novo Sistema</h4>
+                    <div class="input-group">
+                        <label>Nome</label>
+                        <input type="text" class="input" id="sys-nome" placeholder="Ex: Auditor Fiscal">
+                    </div>
+                    <div class="input-group">
+                        <label>ID do Sistema</label>
+                        <input type="text" class="input" id="sys-id" placeholder="Ex: AUDIT_FISCAL">
+                    </div>
+                    <div class="input-group">
+                        <label>URL</label>
+                        <input type="text" class="input" id="sys-url" placeholder="https://...">
+                    </div>
+                    <div class="flex gap-sm">
+                        <div class="input-group" style="flex:1">
+                            <label>Categoria</label>
+                            <input type="text" class="input" id="sys-cat" placeholder="Ex: Fiscal">
+                        </div>
+                        <div class="input-group" style="flex:1">
+                            <label>Status</label>
+                            <select class="input" id="sys-status">
+                                <option>Automático</option>
+                                <option>Forçar Online</option>
+                                <option>Forçar Offline</option>
+                                <option>Manutenção</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Descrição</label>
+                        <input type="text" class="input" id="sys-desc" placeholder="Descrição curta">
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="createSystem()">✅ Criar Sistema</button>
+                </div>
+
+                <!-- TAB: USUÁRIOS -->
+                <div id="tab-usuarios" class="tab-content">
+                    <h4 class="mb-2">Usuários Cadastrados</h4>
+                    <div id="admin-users-list"></div>
+                    <hr style="margin: 20px 0;">
+                    <h4 class="mb-2">➕ Novo Usuário</h4>
+                    <div class="input-group">
+                        <label>Nome Completo</label>
+                        <input type="text" class="input" id="user-nome" placeholder="Nome do usuário">
+                    </div>
+                    <div class="input-group">
+                        <label>E-mail</label>
+                        <input type="email" class="input" id="user-email" placeholder="email@empresa.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Função</label>
+                        <select class="input" id="user-funcao"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Senha Temporária</label>
+                        <input type="password" class="input" id="user-senha" placeholder="Senha inicial">
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="createUser()">✅ Criar Usuário</button>
+                </div>
+
+                <!-- TAB: FUNÇÕES -->
+                <div id="tab-funcoes" class="tab-content">
+                    <h4 class="mb-2">Funções / Cargos</h4>
+                    <div id="admin-roles-list"></div>
+                    <hr style="margin: 20px 0;">
+                    <h4 class="mb-2">➕ Nova Função</h4>
+                    <div class="input-group">
+                        <label>ID único</label>
+                        <input type="text" class="input" id="role-id" placeholder="ex: gerente_vendas">
+                    </div>
+                    <div class="input-group">
+                        <label>Nome do Cargo</label>
+                        <input type="text" class="input" id="role-nome" placeholder="Ex: Gerente de Vendas">
+                    </div>
+                    <div class="input-group">
+                        <label>Descrição</label>
+                        <input type="text" class="input" id="role-desc" placeholder="Descrição do cargo">
+                    </div>
+                    <div class="input-group">
+                        <label>Nível de Permissão</label>
+                        <select class="input" id="role-perm">
+                            <option value="usuario">Usuário</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="createRole()">✅ Criar Função</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js?v=3"></script>
+</body>
+
+</html>

@@ -1,0 +1,28 @@
+# ============================================================
+# Metricas ONVIO — Backend (FastAPI)
+# Build context: metricas-onvio/
+# ============================================================
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# ---------- dependencies ----------
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# ---------- application code ----------
+COPY backend/ ./backend/
+
+# ---------- data files used by config.py ----------
+COPY service_account.json ./service_account.json
+COPY departments.json     ./departments.json
+COPY month_labels.json    ./month_labels.json
+
+# ---------- runtime ----------
+# Cloud Run sets $PORT (default 8080)
+ENV PORT=8080
+EXPOSE ${PORT}
+
+CMD exec uvicorn backend.main:app --host 0.0.0.0 --port ${PORT}

@@ -1,0 +1,15 @@
+Dockerfile
+README.md
+*.pyc
+*.pyo
+*.pyd
+__pycache__
+.pytest_cache
+.git
+.gitignore
+.dockerignore
+venv
+env
+api_keys.py
+credentials.json
+local_settings.py

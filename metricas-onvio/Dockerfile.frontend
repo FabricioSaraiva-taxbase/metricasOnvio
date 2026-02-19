@@ -1,0 +1,42 @@
+# ============================================================
+# Metricas ONVIO — Frontend (Next.js)
+# Build context: metricas-onvio/
+# ============================================================
+
+# -------------------- Stage 1: Build --------------------
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Public env vars must be present at build time
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_HUB_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_HUB_URL=${NEXT_PUBLIC_HUB_URL}
+
+# Install dependencies first (layer cache)
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+# Copy source and build
+COPY frontend/ ./
+RUN npm run build
+
+# -------------------- Stage 2: Run --------------------
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# Cloud Run sets $PORT (default 3000)
+ENV PORT=3000
+EXPOSE ${PORT}
+
+# Next.js standalone server honours the PORT env var
+CMD ["node", "server.js"]

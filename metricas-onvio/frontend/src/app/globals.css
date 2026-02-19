@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+/* ===========================
+   DESIGN SYSTEM TAXBASE
+   Paleta extraída do logo + Streamlit app
+   =========================== */
+
+:root {
+  /* Brand */
+  --taxbase-blue: #00A0E3;
+  --taxbase-blue-hover: #0080B3;
+  --taxbase-blue-glow: rgba(0, 160, 227, 0.35);
+
+  /* Light Theme */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F0F2F6;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #FAFBFC;
+  --text-primary: #3C4A54;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border-color: #E5E7EB;
+  --border-hover: #D1D5DB;
+
+  /* Charts */
+  --chart-grid: #E5E7EB;
+  --chart-axis: #6B7280;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --shadow-blue: 0 4px 20px rgba(0, 160, 227, 0.35);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1E2328;
+  --bg-secondary: #282D33;
+  --bg-card: #282D33;
+  --bg-sidebar: #1A1F24;
+  --text-primary: #FFFFFF;
+  --text-secondary: #C9CDD3;
+  --text-muted: #8B949E;
+  --border-color: #373D44;
+  --border-hover: #4A5058;
+
+  /* Charts */
+  --chart-grid: #373D44;
+  --chart-axis: #8B949E;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ===========================
+   TAILWIND THEME INTEGRATION
+   =========================== */
+
+@theme inline {
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--bg-card);
+  --color-secondary: var(--bg-secondary);
+  --color-muted: var(--text-muted);
+  --color-border: var(--border-color);
+  --color-taxbase: var(--taxbase-blue);
+  --font-sans: var(--font-inter);
+}
+
+/* ===========================
+   BASE STYLES
+   =========================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  transition: background var(--transition-base), color var(--transition-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===========================
+   SCROLLBAR
+   =========================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(0, 160, 227, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(0, 160, 227, 0.4);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease forwards;
+}

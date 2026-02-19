@@ -1,0 +1,10 @@
+[
+    {
+        "nome": "Auditor Fiscal",
+        "sistema_id": "AUDIT_FISCAL",
+        "url": "auditor",
+        "categoria": "Fiscal",
+        "desc": "Sistema de auditoria e controle de obrigações fiscais",
+        "status_manual": "Forçar Online"
+    }
+]

@@ -1,0 +1,11 @@
+[
+    {
+        "id": "admin_master",
+        "nome": "Administrador Master",
+        "sistemas": [
+            "*"
+        ],
+        "permissao": "admin",
+        "descricao": "Acesso total a todos os sistemas"
+    }
+]

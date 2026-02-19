@@ -1,0 +1,25 @@
+.gcloudignore
+.git
+.gitignore
+__pycache__/
+venv/
+env/
+requirements.txt.bak
+README.md
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+AUDIT_FISCAL/poppler-25.12.0/
+
+# SENSITIVE FILES - CRITICAL TO EXCLUDE
+credentials.json
+AUDIT_FISCAL/credentials.json
+api_keys.py
+local_settings.py
+key.json
+*.json # Exclude all JSONs in root just in case, but keep data if needed (though data/*.json is ephemeral)
+# Explicitly exclude data JSONs if we migrated
+data/usuarios.json
+data/sistemas.json
+data/funcoes.json

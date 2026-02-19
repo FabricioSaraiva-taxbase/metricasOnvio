@@ -1,0 +1,12 @@
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+google-cloud-bigquery
+google-cloud-vision
+pandas
+pdfminer.six
+pdf2image
+pytz
+openpyxl
+db-dtypes
+python-dateutil

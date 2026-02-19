@@ -1,0 +1,28 @@
+# Dependencies & build artifacts
+frontend/node_modules
+frontend/.next
+backend/__pycache__
+backend/**/__pycache__
+
+# Version control
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# Legacy / docs (not needed in images)
+_legacy
+*.md
+data/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Old Streamlit files
+app_metricas.py
+statusContatos.xlsx
+logo_taxbase.png
+taxbase.png

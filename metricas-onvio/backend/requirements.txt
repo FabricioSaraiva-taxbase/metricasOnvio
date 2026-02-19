@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-multipart
+pandas
+openpyxl
+google-cloud-bigquery
+python-jose[cryptography]
+passlib[bcrypt]
+pydantic
+pydantic-settings
+email-validator
+requests
+httpx
+db-dtypes

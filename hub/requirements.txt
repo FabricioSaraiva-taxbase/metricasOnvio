@@ -1,0 +1,11 @@
+flask
+gunicorn
+requests
+PyJWT
+google-cloud-bigquery
+google-api-python-client
+google-auth
+pandas
+db-dtypes
+python-dateutil
+openpyxl
